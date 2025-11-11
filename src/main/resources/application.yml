@@ -1,0 +1,167 @@
+server:
+  port: 9099
+  shutdown: graceful
+  netty:
+    connection-timeout: 3s
+    idle-timeout: 20s
+
+spring:
+  application:
+    name: gateway-service
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+  config:
+    import: ${configserver.import}
+  cloud:
+    config:
+      import-check:
+        enabled: false
+      request-connect-timeout: 5000
+      request-read-timeout: 5000
+      fail-fast: false
+      retry:
+        max-attempts: 6
+        initial-interval: 1000
+        max-interval: 2000
+        multiplier: 1.1
+      label: monitoring
+
+    gateway:
+      httpclient:
+        connect-timeout: 3000
+        response-timeout: 5s
+      default-filters:
+        - name: Retry
+          args:
+            retries: 5
+            methods: GET
+            series: SERVER_ERROR
+            exceptions: java.io.IOException, java.util.concurrent.TimeoutException
+            backoff:
+              firstBackoff: 300ms
+              maxBackoff: 3000ms
+              factor: 2
+              basedOnPreviousValue: false
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter:
+              replenishRate: 10
+              burstCapacity: 20
+              requestedTokens: 1
+      routes:
+        - id: menu-service-route
+          uri: lb://menu-service
+          predicates:
+            - Path=/v1/menu-items/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: menuServiceCircuitBreaker
+        - id: orders-service-route
+          uri: lb://orders-service
+          predicates:
+            - Path=/v1/menu-orders/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: ordersServiceCircuitBreaker
+        - id: review-service-route
+          uri: lb://review-service
+          predicates:
+            - Path=/v1/reviews/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: reviewServiceCircuitBreaker
+        - id: menu-aggregate-service-route
+          uri: lb://menu-aggregate-service
+          predicates:
+            - Path=/v1/menu-aggregate/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: menuAggregateServiceCircuitBreaker
+  data:
+    redis:
+      connect-timeout: 3s
+      host: ${external.redis-host}
+      port: ${external.redis-port}
+      timeout: 3s
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${external.keycloak-url}
+          jwk-set-uri: ${external.jwk-set-url}
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-type: time_based
+        sliding-window-size: 30
+        failure-rate-threshold: 60
+        permitted-number-of-calls-in-half-open-state: 5
+        wait-duration-in-open-state: 10s
+        slow-call-duration-threshold: 5s
+        minimum-number-of-calls: 15
+    instances:
+      menuServiceCircuitBreaker:
+        base-config: default
+      ordersServiceCircuitBreaker:
+        base-config: default
+      reviewServiceCircuitBreaker:
+        base-config: default
+      menuAggregateServiceCircuitBreaker:
+        base-config: default
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 5s
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${external.discovery-service-url}
+    registry-fetch-interval-seconds: 5
+    initial-instance-info-replication-interval-seconds: 5
+  instance:
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 5
+    prefer-ip-address: true
+
+configserver:
+  import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:9095}
+
+external:
+  discovery-service-url: http://localhost:8761/eureka/
+  redis-host: localhost
+  redis-port: 6379
+  zipkin-endpoint: http://localhost:9411/api/v2/spans
+  keycloak-url: ${KEYCLOAK_URL:http://keycloak:8080/realms/cloud-java}
+  jwk-set-url: ${JWK_SET_URL:http://keycloak:8080/realms/cloud-java/protocol/openid-connect/certs}
+  loki-url: http://localhost:3100/loki/api/v1/push
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    gateway:
+      enabled: true
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+    propagation:
+      type: b3
+  zipkin:
+    tracing:
+      endpoint: ${external.zipkin-endpoint}
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        all: true
