@@ -4,6 +4,10 @@ server:
   netty:
     connection-timeout: 3s
     idle-timeout: 20s
+  reactive:
+    session:
+      cookie:
+        name: CLOUD_JAVA_SESSION
 
 spring:
   application:
@@ -24,7 +28,7 @@ spring:
         initial-interval: 1000
         max-interval: 2000
         multiplier: 1.1
-      label: monitoring
+      label: security_client #gateway_service # monitoring
 
     gateway:
       httpclient:
@@ -48,51 +52,63 @@ spring:
               replenishRate: 10
               burstCapacity: 20
               requestedTokens: 1
+        - TokenRelay
+        - SaveSession
       routes:
-        - id: menu-service-route
-          uri: lb://menu-service
+        - id: course-service-route
+          uri: lb://course-service
           predicates:
-            - Path=/v1/menu-items/**
+            - Path=/v1/courses/**
           filters:
             - name: CircuitBreaker
               args:
-                name: menuServiceCircuitBreaker
-        - id: orders-service-route
-          uri: lb://orders-service
+                name: courseServiceCircuitBreaker
+        - id: enrollments-service-route
+          uri: lb://enrollments-service
           predicates:
-            - Path=/v1/menu-orders/**
+            - Path=/v1/course-enrollments/**
           filters:
             - name: CircuitBreaker
               args:
-                name: ordersServiceCircuitBreaker
-        - id: review-service-route
-          uri: lb://review-service
+                name: enrollmentsServiceCircuitBreaker
+        - id: feedback-service-route
+          uri: lb://feedback-service
           predicates:
-            - Path=/v1/reviews/**
+            - Path=/v1/feedbacks/**
           filters:
             - name: CircuitBreaker
               args:
-                name: reviewServiceCircuitBreaker
-        - id: menu-aggregate-service-route
-          uri: lb://menu-aggregate-service
+                name: feedbackServiceCircuitBreaker
+        - id: course-aggregate-service-route
+          uri: lb://course-aggregate-service
           predicates:
-            - Path=/v1/menu-aggregate/**
+            - Path=/v1/course-aggregate/**
           filters:
             - name: CircuitBreaker
               args:
-                name: menuAggregateServiceCircuitBreaker
+                name: courseAggregateServiceCircuitBreaker
   data:
     redis:
       connect-timeout: 3s
       host: ${external.redis-host}
       port: ${external.redis-port}
       timeout: 3s
+
+  session:
+    timeout: 10m
+    redis:
+      namespace: cloudjava:gateway
   security:
     oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: ${external.keycloak-url}
-          jwk-set-uri: ${external.jwk-set-url}
+      client:
+        registration:
+          keycloak:
+            client-id: cloud-java-gateway
+            client-secret: ${external.keycloak-client-secret}
+            scope: openid,roles
+        provider:
+          keycloak:
+            issuer-uri: ${external.keycloak-url}
 
 resilience4j:
   circuitbreaker:
@@ -106,13 +122,13 @@ resilience4j:
         slow-call-duration-threshold: 5s
         minimum-number-of-calls: 15
     instances:
-      menuServiceCircuitBreaker:
+      courseServiceCircuitBreaker:
         base-config: default
-      ordersServiceCircuitBreaker:
+      enrollmentsServiceCircuitBreaker:
         base-config: default
-      reviewServiceCircuitBreaker:
+      feedbackServiceCircuitBreaker:
         base-config: default
-      menuAggregateServiceCircuitBreaker:
+      courseAggregateServiceCircuitBreaker:
         base-config: default
   timelimiter:
     configs:
@@ -139,8 +155,7 @@ external:
   redis-port: 6379
   zipkin-endpoint: http://localhost:9411/api/v2/spans
   keycloak-url: ${KEYCLOAK_URL:http://keycloak:8080/realms/cloud-java}
-  jwk-set-url: ${JWK_SET_URL:http://keycloak:8080/realms/cloud-java/protocol/openid-connect/certs}
-  loki-url: http://localhost:3100/loki/api/v1/push
+  keycloak-client-secret: 5eVPs8Am7if8P6KMUi4nSFpZJhIh1uE1
 
 management:
   endpoints:
@@ -154,14 +169,14 @@ management:
     enabled: true
     sampling:
       probability: 1.0
+      # 1 = for each request, 0.1 = 10%
     propagation:
       type: b3
   zipkin:
     tracing:
       endpoint: ${external.zipkin-endpoint}
-  metrics:
-    tags:
-      application: ${spring.application.name}
-    distribution:
-      percentiles-histogram:
-        all: true
+
+  logging:
+    level:
+      org.springframework.security: TRACE
+      web: TRACE
