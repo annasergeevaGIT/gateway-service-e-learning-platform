@@ -31,8 +31,8 @@ public class SecurityConfig {
                 .authorizeExchange(exchange ->
                         exchange
                                 .pathMatchers("/actuator/**").permitAll()
-                                .pathMatchers(HttpMethod.GET, "/v1/course-items/**").permitAll()
-                                .pathMatchers(HttpMethod.GET, "/v1/feedbacks/course-item/**").permitAll()
+                                .pathMatchers(HttpMethod.GET, "/v1/courses/**").permitAll()
+                                .pathMatchers(HttpMethod.GET, "/v1/feedbacks/course/**").permitAll()
                                 .pathMatchers(HttpMethod.GET, "/v1/feedbacks/{id}").permitAll()
                                 .pathMatchers(HttpMethod.GET, "/v1/course-aggregate/**").permitAll()
                                 .pathMatchers(HttpMethod.POST, "/v1/feedbacks/ratings/**").permitAll()
