@@ -11,7 +11,7 @@ server:
 
 spring:
   application:
-    name: gateway-service
+    name: gateway-service-e-learning-platform
   lifecycle:
     timeout-per-shutdown-phase: 30s
   config:
@@ -63,8 +63,8 @@ spring:
             - name: CircuitBreaker
               args:
                 name: courseServiceCircuitBreaker
-        - id: enrollments-service-route
-          uri: lb://enrollments-service
+        - id: enrollment-service-route
+          uri: lb://enrollment-service
           predicates:
             - Path=/v1/course-enrollments/**
           filters:
