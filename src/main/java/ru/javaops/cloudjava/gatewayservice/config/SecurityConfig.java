@@ -25,22 +25,22 @@ public class SecurityConfig {
                 .authorizeExchange(exchange ->
                         exchange
                                 .pathMatchers("/actuator/**").permitAll()
-                                // matchers for Menu Service
-                                .pathMatchers(HttpMethod.GET, "/v1/menu-items/**").permitAll()
-                                .pathMatchers(HttpMethod.POST, "/v1/menu-items/menu-info").permitAll()
-                                .pathMatchers(HttpMethod.POST, "/v1/menu-items/**").hasRole("ADMIN")
-                                .pathMatchers(HttpMethod.DELETE, "/v1/menu-items/**").hasRole("ADMIN")
-                                .pathMatchers(HttpMethod.PATCH, "/v1/menu-items/**").hasRole("ADMIN")
-                                // matchers for Orders Service
-                                .pathMatchers("/v1/menu-orders/**").hasRole("USER")
-                                // matchers for Review Service
-                                .pathMatchers(HttpMethod.POST, "/v1/reviews/ratings").permitAll()
-                                .pathMatchers(HttpMethod.POST, "/v1/reviews/**").hasRole("USER")
-                                .pathMatchers(HttpMethod.GET, "/v1/reviews/my/**").hasRole("USER")
-                                .pathMatchers(HttpMethod.GET, "/v1/reviews/menu-item/**").permitAll()
-                                .pathMatchers(HttpMethod.GET, "/v1/reviews/{id}").permitAll()
-                                // matchers for Menu Aggregate Service
-                                .pathMatchers(HttpMethod.GET, "/v1/menu-aggregate/**").permitAll()
+                                // matchers for Course Service
+                                .pathMatchers(HttpMethod.GET, "/v1/courses/**").permitAll()
+                                .pathMatchers(HttpMethod.POST, "/v1/courses/course-info").permitAll()
+                                .pathMatchers(HttpMethod.POST, "/v1/courses/**").hasRole("ADMIN")
+                                .pathMatchers(HttpMethod.DELETE, "/v1/courses/**").hasRole("ADMIN")
+                                .pathMatchers(HttpMethod.PATCH, "/v1/courses/**").hasRole("ADMIN")
+                                // matchers for Enrollments Service
+                                .pathMatchers("/v1/course-enrollments/**").hasRole("USER")
+                                // matchers for Feedback Service
+                                .pathMatchers(HttpMethod.POST, "/v1/feedbacks/ratings").permitAll()
+                                .pathMatchers(HttpMethod.POST, "/v1/feedbacks/**").hasRole("USER")
+                                .pathMatchers(HttpMethod.GET, "/v1/feedbacks/my/**").hasRole("USER")
+                                .pathMatchers(HttpMethod.GET, "/v1/feedbacks/course/**").permitAll()
+                                .pathMatchers(HttpMethod.GET, "/v1/feedbacks/{id}").permitAll()
+                                // matchers for Course Aggregate Service
+                                .pathMatchers(HttpMethod.GET, "/v1/course-aggregate/**").permitAll()
                                 .anyExchange().authenticated())
                 //  настраиваем сервера ресурсов c JWT-токенами
                 .oauth2ResourceServer(customizer -> customizer.jwt(Customizer.withDefaults()))
