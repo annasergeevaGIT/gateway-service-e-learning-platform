@@ -1,7 +1,7 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.2.5'
-    id 'io.spring.dependency-management' version '1.1.5'
+    id 'org.springframework.boot' version '3.5.7'
+    id 'io.spring.dependency-management' version '1.1.7'
 }
 
 group = 'ru.javaops.cloudjava'
@@ -22,8 +22,8 @@ repositories {
 }
 
 ext {
-    springCloudVersion ='2023.0.1'
-    lokiAppenderVersion ='1.5.1'
+    springCloudVersion ='2025.0.0'
+    lokiAppenderVersion ='2.0.1'
 }
 
 dependencies {

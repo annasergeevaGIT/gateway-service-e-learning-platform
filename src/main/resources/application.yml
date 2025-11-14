@@ -13,6 +13,7 @@ spring:
   config:
     import: ${configserver.import}
   cloud:
+
     config:
       import-check:
         enabled: false
@@ -24,63 +25,68 @@ spring:
         initial-interval: 1000
         max-interval: 2000
         multiplier: 1.1
-      label: security #monitoring
+      label: monitoring #security
 
     gateway:
-      httpclient:
-        connect-timeout: 3000
-        response-timeout: 5s
-      default-filters:
-        - name: Retry
-          args:
-            retries: 5
-            methods: GET
-            series: SERVER_ERROR
-            exceptions: java.io.IOException, java.util.concurrent.TimeoutException
-            backoff:
-              firstBackoff: 300ms
-              maxBackoff: 3000ms
-              factor: 2
-              basedOnPreviousValue: false
-        - name: RequestRateLimiter
-          args:
-            redis-rate-limiter:
-              replenishRate: 10
-              burstCapacity: 20
-              requestedTokens: 1
-      routes:
-        - id: course-service-route
-          uri: lb://course-service
-          predicates:
-            - Path=/v1/courses/**
-          filters:
-            - name: CircuitBreaker
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 3000
+            response-timeout: 5s
+          default-filters:
+            - name: Retry
               args:
-                name: courseServiceCircuitBreaker
-        - id: enrollment-service-route
-          uri: lb://enrollment-service
-          predicates:
-            - Path=/v1/course-enrollments/**
-          filters:
-            - name: CircuitBreaker
+                retries: 5
+                methods: GET
+                series: SERVER_ERROR
+                exceptions: java.io.IOException, java.util.concurrent.TimeoutException
+                backoff:
+                  firstBackoff: 300ms
+                  maxBackoff: 3000ms
+                  factor: 2
+                  basedOnPreviousValue: false
+            - name: RequestRateLimiter
               args:
-                name: enrollmentServiceCircuitBreaker
-        - id: feedback-service-route
-          uri: lb://feedback-service
-          predicates:
-            - Path=/v1/feedbacks/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: feedbackServiceCircuitBreaker
-        - id: aggregate-service-route
-          uri: lb://aggregate-service
-          predicates:
-            - Path=/v1/course-aggregate/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: courseAggregateServiceCircuitBreaker
+                redis-rate-limiter:
+                  replenishRate: 10
+                  burstCapacity: 20
+                  requestedTokens: 1
+          routes:
+            - id: course-service-route
+              uri: lb://course-service
+              predicates:
+                - Path=/v1/courses/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: courseServiceCircuitBreaker
+            - id: enrollment-service-route
+              uri: lb://enrollment-service
+              predicates:
+                - Path=/v1/course-enrollments/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: enrollmentServiceCircuitBreaker
+            - id: feedback-service-route
+              uri: lb://feedback-service
+              predicates:
+                - Path=/v1/feedbacks/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: feedbackServiceCircuitBreaker
+            - id: aggregate-service-route
+              uri: lb://aggregate-service
+              predicates:
+                - Path=/v1/course-aggregate/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: courseAggregateServiceCircuitBreaker
+
+
+
   data:
     redis:
       connect-timeout: 3s
@@ -140,7 +146,7 @@ external:
   zipkin-endpoint: http://localhost:9411/api/v2/spans
   keycloak-url: ${KEYCLOAK_URL:http://keycloak:8080/realms/cloud-java}
   jwk-set-url: ${JWK_SET_URL:http://keycloak:8080/realms/cloud-java/protocol/openid-connect/certs}
-  #loki-url: http://localhost:3100/loki/api/v1/push
+  loki-url: http://localhost:3100/loki/api/v1/push
 
 management:
   endpoints:
@@ -149,7 +155,7 @@ management:
         include: "*"
   endpoint:
     gateway:
-      enabled: true
+      access: unrestricted
   tracing:
     enabled: true
     sampling:
@@ -159,9 +165,9 @@ management:
   zipkin:
     tracing:
       endpoint: ${external.zipkin-endpoint}
-#  metrics:
-#    tags:
-#      application: ${spring.application.name}
-#    distribution:
-#      percentiles-histogram:
-#        all: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        all: true
