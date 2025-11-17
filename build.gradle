@@ -37,6 +37,7 @@ dependencies {
     implementation 'org.springframework.cloud:spring-cloud-starter-config'
     implementation 'org.springframework.retry:spring-retry'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation "io.micrometer:context-propagation" // only for reactive apps
     runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
     runtimeOnly "com.github.loki4j:loki-logback-appender:${lokiAppenderVersion}"
     compileOnly 'org.projectlombok:lombok'
